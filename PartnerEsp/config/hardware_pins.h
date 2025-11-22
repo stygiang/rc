@@ -116,8 +116,8 @@ const PinDef PARTNER_PINS[] = {
   { "SCL_IOEXP", 10, PINF_I2C_SCL, "PCF8575 SCL" },
 
   // UART connection back to master
-  { "UART_RX_MASTER", 21, PINF_UART_RX, "RX from master" },
-  { "UART_TX_MASTER", 20, PINF_UART_TX, "TX to master" },
+  { "UART_RX_MASTER", 22, PINF_UART_RX, "RX from master" },
+  { "UART_TX_MASTER", 23, PINF_UART_TX, "TX to master" },
 
   // I2C for PCA9685 16-channel PWM
   { "SDA_PCA",    8, PINF_I2C_SDA, "PCA9685 SDA" },
@@ -138,8 +138,8 @@ const Hardware PARTNER_ESP32 = {
   "Partner ESP32",
   "Handles IO expander + PCA9685 and talks to master",
   HW_PARTNER_ESP,
-  21,                 // rxPin (from master)
-  20,                 // txPin (to master)
+  22,                 // rxPin (from master)
+  23,                 // txPin (to master)
   8,                  // sdaPin (PCA bus as 'main' I2C, arbitrarily chosen)
   7,                  // sclPin
   0,                  // not an I2C peripheral
@@ -164,15 +164,15 @@ const PinDef PCF8575_PINS[] = {
   { "MID_BIN2",    7, PINF_MOTOR_IN,     "Middle driver BIN2 (P7)" },
 
   // Back driver direction
-  { "BACK_AIN1",   8, PINF_MOTOR_IN,     "Back driver AIN1 (P8)" },
-  { "BACK_AIN2",   9, PINF_MOTOR_IN,     "Back driver AIN2 (P9)" },
-  { "BACK_BIN1",  10, PINF_MOTOR_IN,     "Back driver BIN1 (P10)" },
-  { "BACK_BIN2",  11, PINF_MOTOR_IN,     "Back driver BIN2 (P11)" },
+  { "BACK_AIN1",   10, PINF_MOTOR_IN,     "Back driver AIN1 (P10)" },
+  { "BACK_AIN2",   11, PINF_MOTOR_IN,     "Back driver AIN2 (P11)" },
+  { "BACK_BIN1",  12, PINF_MOTOR_IN,     "Back driver BIN1 (P12)" },
+  { "BACK_BIN2",  13, PINF_MOTOR_IN,     "Back driver BIN2 (P13)" },
 
-  // ToF shutdown lines
-  { "SHUT_TOF_FL", 12, PINF_TOF_SHUTDOWN, "ToF front-left shutdown (P12)" },
-  { "SHUT_TOF_FR", 13, PINF_TOF_SHUTDOWN, "ToF front-right shutdown (P13)" }, // assumption
-  { "SHUT_TOF_BK", 14, PINF_TOF_SHUTDOWN, "ToF back shutdown (P14)" }
+  // ToF shutdown lines (temporarily disabled)
+  // { "SHUT_TOF_FL", 14, PINF_TOF_SHUTDOWN, "ToF front-left shutdown (P14)" },
+  // { "SHUT_TOF_FR", 15, PINF_TOF_SHUTDOWN, "ToF front-right shutdown (P15)" }, // assumption
+  // { "SHUT_TOF_BK", 16, PINF_TOF_SHUTDOWN, "ToF back shutdown (P16)" }
 };
 
 // On your partner ESP the PCF8575 is on SDA=9, SCL=10 and default address 0x20.

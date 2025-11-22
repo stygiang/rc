@@ -1,5 +1,8 @@
+#include <Arduino.h>
+#include <esp32-hal-ledc.h>
 #include "hardware_partner.h"
 #include "config/hardware_pins.h"
+
 
 TwoWire partnerBus = TwoWire(0);
 Pca9685Driver pca(partnerBus);
@@ -127,20 +130,27 @@ void Pca9685Driver::read8(uint8_t reg, uint8_t& val) {
 }
 
 void MotorPwmDriver::begin() {
+#if defined(ARDUINO_ARCH_ESP32) || defined(ESP_PLATFORM)
   const uint8_t pins[6] = { 6, 5, 1, 2, 3, 4 }; // from PARTNER_PINS
   const uint8_t chans[6] = { 0, 1, 2, 3, 4, 5 };
   for (uint8_t i = 0; i < 6; ++i) {
-    ledcSetup(chans[i], pwmFreqHz, pwmResolutionBits);
-    ledcAttachPin(pins[i], chans[i]);
+    ledcAttachChannel(pins[i], static_cast<uint32_t>(pwmFreqHz), pwmResolutionBits, chans[i]);
     channels[i] = chans[i];
   }
+#else
+  Serial.println("[Partner] LEDC not available on this platform");
+#endif
 }
 
 void MotorPwmDriver::setAll(const uint8_t* duty) {
+#if defined(ARDUINO_ARCH_ESP32) || defined(ESP_PLATFORM)
   if (!duty) return;
   for (uint8_t i = 0; i < 6; ++i) {
-    ledcWrite(channels[i], duty[i]);
+    ledcWriteChannel(channels[i], duty[i]);
   }
+#else
+  (void)duty;
+#endif
 }
 
 void partnerHardwareSetup() {

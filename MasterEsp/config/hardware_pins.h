@@ -66,9 +66,9 @@ struct Hardware {
   uint8_t           pinCount;
 };
 
-// TX0 / RX0 for classic ESP32
-#define ESP32_TX0_PIN 1
-#define ESP32_RX0_PIN 3
+// Dedicated UART link pins to Partner ESP (avoid USB TX0/RX0)
+#define ESP32_TX0_PIN 32
+#define ESP32_RX0_PIN 33
 
 // -----------------------------
 // MASTER ESP32 PINS
@@ -83,8 +83,8 @@ const PinDef MASTER_PINS[] = {
   { "CH6",        5, PINF_RC_CHANNEL, "RC receiver channel 6" },
 
   // UART link to partner ESP
-  { "UART_TX0",  ESP32_TX0_PIN, PINF_UART_TX, "TX0 to partner ESP" },
-  { "UART_RX0",  ESP32_RX0_PIN, PINF_UART_RX, "RX0 from partner ESP" },
+  { "UART_TX_LINK",  ESP32_TX0_PIN, PINF_UART_TX, "Link TX to partner ESP" },
+  { "UART_RX_LINK",  ESP32_RX0_PIN, PINF_UART_RX, "Link RX from partner ESP" },
 
   // ToF front-left sensor on its own I2C pair
   { "SDA_TOF_FL", 18, PINF_TOF_SDA,  "ToF FL sensor SDA" },
@@ -103,8 +103,6 @@ const PinDef MASTER_PINS[] = {
 
   // Free / untitled pins (from your doc)
   { "FREE_25",   25, PINF_UNASSIGNED, "Available GPIO" },
-  { "FREE_32",   32, PINF_UNASSIGNED, "Available GPIO" },
-  { "FREE_33",   33, PINF_UNASSIGNED, "Available GPIO" },
   { "FREE_34",   34, PINF_UNASSIGNED, "Available GPIO (input only on ESP32)" },
   { "FREE_35",   35, PINF_UNASSIGNED, "Available GPIO (input only on ESP32)" }
 };

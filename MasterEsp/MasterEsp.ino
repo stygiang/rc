@@ -4,6 +4,10 @@
 #include "hardware_master.h"
 #include "rc_control.h"
 #include "console_master.h"
+#include <Wire.h>
+
+
+
 
 void setup() {
   Serial.begin(115200);
@@ -14,6 +18,7 @@ void setup() {
   hardwareSetup();
   rcControlSetup();
   consoleSetup();
+  
 }
 
 void loop() {
@@ -21,6 +26,9 @@ void loop() {
   hardwareLoop();
   rcControlLoop();
   consoleLoop();
+  //
+   
+  
 
   // TODO: feed desired motor/light/IO commands from RC input and sensors.
   // Example placeholders (commented out until ready):

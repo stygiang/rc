@@ -2,14 +2,11 @@
 
 #include <Arduino.h>
 
-// Uncomment to enable VL53L1X support when the library is installed.
-// #define USE_VL53L1X
+// Uncomment to enable Adafruit VL53L0X support when the library is installed.
+#define USE_ADAFRUIT_VL53L0X
 
-#ifdef USE_VL53L1X
-#include <VL53L1X.h>
-#ifndef WIRE_INTERFACES_COUNT
-#define WIRE_INTERFACES_COUNT 2
-#endif
+#ifdef USE_ADAFRUIT_VL53L0X
+#include <Adafruit_VL53L0X.h>
 #endif
 
 struct PinDef;
@@ -35,12 +32,11 @@ class ToFSensor {
 public:
   bool begin(int sda, int scl, uint8_t address = 0x29);
   int readMillimeters();
+  bool readMeasurement(int& mm, uint8_t& status);
 
 private:
-#ifdef USE_VL53L1X
-  static uint8_t nextBus;
-  TwoWire* bus = nullptr;
-  VL53L1X sensor;
+#ifdef USE_ADAFRUIT_VL53L0X
+  Adafruit_VL53L0X sensor;
   bool ok = false;
 #endif
 };
@@ -53,3 +49,5 @@ extern ToFSensor tofBK;
 
 void hardwareSetup();
 void hardwareLoop();
+void hardwareLoggingEnable();
+void hardwareLoggingDisable();

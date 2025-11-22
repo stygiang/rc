@@ -26,6 +26,8 @@ void printHelp() {
   Serial.println("io <hex>             - set PCF8575 state (16-bit, e.g., 0x00FF)");
   Serial.println("ping                 - send ping");
   Serial.println("status               - show mode and last RC pulses");
+  Serial.println("log on|off           - toggle hardware logging (RC/battery/ToF)");
+  Serial.println("tof [fl|fr|bk]       - read one ToF measurement with status");
   Serial.println("help                 - show this help");
 }
 
@@ -91,6 +93,23 @@ void handleCommand(const String& cmdLine) {
   if (cmd.equalsIgnoreCase("ping")) {
     sendPingCommand();
     Serial.println("[Console] ping sent");
+    return;
+  }
+
+  if (cmd.equalsIgnoreCase("log")) {
+    if (count < 2) {
+      Serial.println("usage: log on|off");
+      return;
+    }
+    if (tokens[1].equalsIgnoreCase("on")) {
+      hardwareLoggingEnable();
+      Serial.println("[Console] hardware logging ON");
+    } else if (tokens[1].equalsIgnoreCase("off")) {
+      hardwareLoggingDisable();
+      Serial.println("[Console] hardware logging OFF");
+    } else {
+      Serial.println("usage: log on|off");
+    }
     return;
   }
 
@@ -167,6 +186,31 @@ void handleCommand(const String& cmdLine) {
     const uint16_t state = hexToUint16(tokens[1]);
     sendIoExpanderState(state);
     Serial.printf("[Console] IO state=0x%04X\n", state);
+    return;
+  }
+
+  if (cmd.equalsIgnoreCase("tof")) {
+    ToFSensor* sensor = &tofFL;
+    const char* name = "FL";
+    if (count >= 2) {
+      if (tokens[1].equalsIgnoreCase("fr")) {
+        sensor = &tofFR;
+        name = "FR";
+      } else if (tokens[1].equalsIgnoreCase("bk") || tokens[1].equalsIgnoreCase("back")) {
+        sensor = &tofBK;
+        name = "BK";
+      } else if (!tokens[1].equalsIgnoreCase("fl")) {
+        Serial.println("usage: tof [fl|fr|bk]");
+        return;
+      }
+    }
+    int mm = -1;
+    uint8_t status = 0xFF;
+    if (sensor->readMeasurement(mm, status)) {
+      Serial.printf("[Console] ToF %s: %d mm (status=0x%02X)\n", name, mm, status);
+    } else {
+      Serial.printf("[Console] ToF %s: no data (status=0x%02X)\n", name, status);
+    }
     return;
   }
 

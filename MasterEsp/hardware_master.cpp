@@ -9,6 +9,7 @@ ToFSensor tofBK;
 
 namespace {
 unsigned long lastHwLogMs = 0;
+bool hwLoggingEnabled = false;
 }
 
 void RcReceiver::begin(const PinDef* pinTable, uint8_t pinCount) {
@@ -39,28 +40,17 @@ float BatteryMonitor::readVolts() const {
   return v;
 }
 
-#ifdef USE_VL53L1X
-uint8_t ToFSensor::nextBus = 0;
-#endif
-
 bool ToFSensor::begin(int sda, int scl, uint8_t address) {
-#ifdef USE_VL53L1X
-  const uint8_t busIndex = nextBus % WIRE_INTERFACES_COUNT;
-  ++nextBus;
-  bus = new TwoWire(busIndex);
-  if (!bus) return false;
-  bus->begin(sda, scl, 400000);
-  sensor.setBus(bus);
-  sensor.setAddress(address);
-  sensor.setTimeout(10);
-  if (!sensor.init()) {
+#ifdef USE_ADAFRUIT_VL53L0X
+  Wire.begin(sda, scl);
+  if (!sensor.begin(address, false, &Wire)) {
     ok = false;
+    Serial.printf("[Master][ToF] init failed at addr 0x%02X on SDA=%d SCL=%d\n", address, sda, scl);
     return false;
   }
-  sensor.setDistanceMode(VL53L1X::Long);
-  sensor.setMeasurementTimingBudget(50000);
-  sensor.startContinuous(50);
+  sensor.configSensor(Adafruit_VL53L0X::VL53L0X_SENSE_HIGH_SPEED);
   ok = true;
+  Serial.printf("[Master][ToF] init ok addr 0x%02X SDA=%d SCL=%d\n", address, sda, scl);
   return true;
 #else
   (void)sda; (void)scl; (void)address;
@@ -68,12 +58,29 @@ bool ToFSensor::begin(int sda, int scl, uint8_t address) {
 #endif
 }
 
+bool ToFSensor::readMeasurement(int& mm, uint8_t& status) {
+#ifdef USE_ADAFRUIT_VL53L0X
+  if (!ok) return false;
+  VL53L0X_RangingMeasurementData_t measure;
+  sensor.rangingTest(&measure, false);
+  status = measure.RangeStatus;
+  if (status == 0) {
+    mm = static_cast<int>(measure.RangeMilliMeter);
+    return true;
+  }
+  return false;
+#else
+  (void)mm; (void)status;
+  return false;
+#endif
+}
+
 int ToFSensor::readMillimeters() {
-#ifdef USE_VL53L1X
-  if (!ok) return -1;
-  if (!sensor.dataReady()) return -1;
-  sensor.read();
-  return static_cast<int>(sensor.rangingData.range_mm);
+#ifdef USE_ADAFRUIT_VL53L0X
+  int mm = -1;
+  uint8_t status = 0xFF;
+  if (readMeasurement(mm, status)) return mm;
+  return -1;
 #else
   return -1;
 #endif
@@ -94,6 +101,8 @@ void hardwareLoop() {
   if (now - lastHwLogMs < 1000) return;
   lastHwLogMs = now;
 
+  if (!hwLoggingEnabled) return;
+
   const uint16_t ch1 = rcReceiver.readUs(0);
   const uint16_t ch2 = rcReceiver.readUs(1);
   const float battery = batteryMonitor.readVolts();
@@ -104,3 +113,6 @@ void hardwareLoop() {
                 tofFR.readMillimeters(),
                 tofBK.readMillimeters());
 }
+
+void hardwareLoggingEnable() { hwLoggingEnabled = true; }
+void hardwareLoggingDisable() { hwLoggingEnabled = false; }

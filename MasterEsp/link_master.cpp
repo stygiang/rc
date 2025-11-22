@@ -10,7 +10,8 @@ constexpr uint8_t FRAME_STX = 0xAA;
 constexpr uint8_t FRAME_MAX_PAYLOAD = 32;
 constexpr uint32_t LINK_BAUD = 115200;
 constexpr unsigned long PING_INTERVAL_MS = 1000;
-constexpr unsigned long PONG_TIMEOUT_MS = 4000;
+constexpr unsigned long LINK_TIMEOUT_MS = 4000;
+constexpr unsigned long STARTUP_GRACE_MS = 3000;
 
 struct Frame {
   uint8_t type;
@@ -26,8 +27,10 @@ uint8_t rxChecksum = 0;
 uint8_t rxIndex = 0;
 
 unsigned long lastPingMs = 0;
-unsigned long lastPongMs = 0;
 unsigned long lastTelemetryMs = 0;
+unsigned long lastActivityMs = 0;
+unsigned long startMs = 0;
+bool linkUp = false;
 
 void sendFrame(uint8_t type, const uint8_t* payload, uint8_t length) {
   if (length > FRAME_MAX_PAYLOAD) {
@@ -97,9 +100,10 @@ void handleFrame(const Frame& frame) {
   switch (frame.type) {
     case MSG_PING:
       sendFrame(MSG_PONG, nullptr, 0);
+      lastActivityMs = millis();
       break;
     case MSG_PONG:
-      lastPongMs = millis();
+      lastActivityMs = millis();
       break;
     case MSG_TELEMETRY:
       if (frame.length >= 6) {
@@ -111,12 +115,13 @@ void handleFrame(const Frame& frame) {
         const uint8_t motorSeq = frame.payload[4];
         const uint8_t lightTarget = frame.payload[5];
         lastTelemetryMs = millis();
+        lastActivityMs = lastTelemetryMs;
         Serial.printf("[Master] telemetry uptime=%lus motorSeq=%u lastLightTarget=%u\n",
                       ms / 1000UL, motorSeq, lightTarget);
       } else {
         Serial.printf("[Master] telemetry payload len=%u (expected >=6)\n", frame.length);
       }
-      break;
+  break;
     default:
       Serial.printf("[Master] unknown frame type 0x%02X len=%u\n", frame.type, frame.length);
       break;
@@ -137,9 +142,24 @@ void heartbeat() {
     lastPingMs = now;
   }
 
-  if (lastPongMs > 0 && (now - lastPongMs) > PONG_TIMEOUT_MS) {
-    Serial.println("[Master] partner link timeout");
-    lastPongMs = now; // avoid spamming while link is down
+  // Link health based on last activity (pong, telemetry, or ping recv)
+  const unsigned long activityAge = (lastActivityMs == 0) ? 0 : (now - lastActivityMs);
+
+  if (linkUp) {
+    if (lastActivityMs > 0 && activityAge > LINK_TIMEOUT_MS) {
+      linkUp = false;
+      Serial.println("[Master] partner link timeout");
+    }
+  } else {
+    const bool pastGrace = (now - startMs) > STARTUP_GRACE_MS;
+    if (lastActivityMs > 0 && activityAge <= LINK_TIMEOUT_MS) {
+      linkUp = true;
+      Serial.println("[Master] partner link restored");
+    } else if (pastGrace && lastActivityMs == 0) {
+      // still nothing after grace; log once then extend grace
+      Serial.println("[Master] partner link waiting for first response");
+      startMs = now; // avoid spamming
+    }
   }
 }
 
@@ -148,6 +168,9 @@ void heartbeat() {
 void linkSetup() {
   linkSerial.begin(LINK_BAUD, SERIAL_8N1, ESP32_RX0_PIN, ESP32_TX0_PIN);
   Serial.printf("[Master] link started at %lu bps on RX=%d TX=%d\n", LINK_BAUD, ESP32_RX0_PIN, ESP32_TX0_PIN);
+  startMs = millis();
+  lastActivityMs = 0;
+  linkUp = false;
 }
 
 void linkLoop() {

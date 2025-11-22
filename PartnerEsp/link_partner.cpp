@@ -11,8 +11,8 @@ constexpr uint32_t LINK_BAUD = 115200;
 constexpr unsigned long PING_INTERVAL_MS = 1000;
 constexpr unsigned long TELEMETRY_INTERVAL_MS = 1000;
 
-constexpr int LINK_RX_PIN = 21; // UART_RX_MASTER from pin table
-constexpr int LINK_TX_PIN = 20; // UART_TX_MASTER from pin table
+constexpr int LINK_RX_PIN = 22; // UART_RX_MASTER from pin table
+constexpr int LINK_TX_PIN = 23; // UART_TX_MASTER from pin table
 
 struct Frame {
   uint8_t type;
